@@ -4,6 +4,13 @@
 
 ### Exercice 3
 
+Vous pouvez observer dans votre console *l'output* configuré précédemment:
+```bash
+Outputs:
+
+file_path = "./message.txt"
+```
+
 Nous allons maintenant utiliser le provider *random* pour générer un mot de passe aléatoire:
 - Modifier le fichier main.tf afin d'utiliser le provider *random* 
 - Ajouter le bloque de code suivant:
@@ -15,10 +22,17 @@ resource "random_password" "password" {
 
 resource "local_file" "password_file" {
   filename = "$${path.module}/password.txt"
-  content  = "Votre mot de passe généré : ${random_password.password.result}"
+  content  = "Votre mot de passe généré : $${random_password.password.result}"
 }
 ```
-
+- Modifier le fichier main.tf pour passer à l'exercice suivant:
+```
+module "exos" {
+  source = "./modules/exos"
+  author = "Utilisateur Terraform"
+  exercice = "exo4"
+}
+``` 
 Un nouveau provider a été ajouté, il faut donc mettre à jour l'environnement Terraform:
 ```bash
 terraform init -upgrade

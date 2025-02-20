@@ -5,7 +5,7 @@ variable "exercice" {
 
 resource "local_file" "readme" {
   filename = "${path.root}/README.md"
-  content  = templatefile("${path.module}/exo2.md.tftpl", {
+  content  = templatefile("${path.module}/${var.exercice}.md.tftpl", {
     timestamp = timestamp()
   })
 }
