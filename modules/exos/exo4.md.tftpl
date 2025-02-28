@@ -33,7 +33,7 @@ resource "local_file" "multi_files" {
 ```
 
 Créer un fichier dynamiquement à l'aide d'un template:
-- Créer un fichier template
+- Créer un fichier template *template.md.tftpl*:
 ```
 # Bienvenue dans Terraform !
 
@@ -48,8 +48,8 @@ variable "author" {
   default = "Utilisateur Terraform"
 }
 
-resource "local_file" "readme" {
-  filename = "$${path.module}/README.md"
+resource "local_file" "config" {
+  filename = "$${path.module}/config.md"
   content  = templatefile("$${path.module}/template.md.tftpl", {
     author    = var.author
     timestamp = timestamp()
