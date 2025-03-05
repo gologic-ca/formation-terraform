@@ -44,10 +44,6 @@ Terraform est un outil d'Infrastructure as Code puissant !
 ```
 - Ajouter le code suivant au fichier main.tf
 ```
-variable "author" {
-  default = "Utilisateur Terraform"
-}
-
 resource "local_file" "config" {
   filename = "$${path.module}/config.md"
   content  = templatefile("$${path.module}/template.md.tftpl", {
