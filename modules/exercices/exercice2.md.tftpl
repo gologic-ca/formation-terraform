@@ -1,71 +1,123 @@
 # Bienvenue dans Terraform !
 
-### Exercice 2
+## Exercice 2 : Variables et Outputs
 
-Vous pouvez consulter l'état courant de votre environnement avec les commandes suivantes:
-```
-terraform state list #Lister les différentes ressources de l'environnement
-terraform state show <state> #Décrire une ressource en particulier 
+### Exploration de l'état Terraform
+
+Vous pouvez consulter l'état courant de votre environnement avec les commandes suivantes :
+```bash
+terraform state list # Lister les différentes ressources de l'environnement
+terraform state show <resource_name> # Décrire une ressource en particulier 
 ```
 
-Nous allons voir comment utiliser des variables et récupérer des valeurs de sortie de notre code (dans le module parent ou 'root'):
-- Créer un fichier outputs.tf avec le code suivant:
+**Exemple :**
+```bash
+terraform state show local_file.message_bonjour
+```
+
+### Objectifs de cet exercice
+
+Dans cet exercice, nous allons apprendre à :
+- Utiliser des variables Terraform
+- Créer des outputs pour récupérer des valeurs
+- Modifier et refactoriser du code existant
+- Utiliser des modules Terraform
+
+### Étape 1 : Créer un fichier outputs.tf
+
+Créez un nouveau fichier `outputs.tf` dans le répertoire racine avec le code suivant :
+
 ```terraform
 output "file_path" {
-  value = local_file.message_bonjour.filename
+  description = "Chemin du fichier de message créé"
+  value       = local_file.message_bonjour.filename
 }
 ```
-- Modifier le fichier variables.tf pour ajouter une nouvelle variable:
+
+### Étape 2 : Ajouter une nouvelle variable
+
+Modifiez le fichier `variables.tf` pour ajouter une nouvelle variable :
+
 ```terraform
 variable "message" {
-  type = string
-  description = "Message personnalisé"
-  default = "Ceci est un message personnalisé."
+  type        = string
+  description = "Message personnalisé à écrire dans le fichier"
+  default     = "Ceci est un message personnalisé."
 }
 ```
-- Modifier le fichier main.tf pour utiliser la variable crée:
-```
+
+### Étape 3 : Modifier la ressource principale
+
+Modifiez le fichier `main.tf` pour utiliser la nouvelle variable :
+
+```terraform
 resource "local_file" "message_bonjour" {
   filename = "$${path.module}/message.txt"
   content  = var.message
 }
 ```
 
-Compte tenu que la variable n'est plus utilisé dans le message, commenter là:
-Modifier dans le fichier variables.tf
-```
-#variable "author" {
-#  type        = string
-#  description = "Fournir votre nom comme auteur"
-#}
+### Étape 4 : Commenter l'ancienne variable
+
+Puisque la variable `author` n'est plus utilisée, commentez-la dans le fichier `variables.tf` :
+
+```terraform
+# variable "author" {
+#   type        = string
+#   description = "Fournir votre nom comme auteur"
+# }
 ```
 
-Nous allons maintenant appeler le module *exercice* avec l'exercice 3:
-- Rajouter un appel du module *exercice* avec l'exercice 3 
+### Étape 5 : Ajouter un nouveau module
+
+Nous allons maintenant appeler le module *exercice* pour l'exercice 3. Ajoutez le code suivant dans `main.tf` :
+
 ```terraform
 module "exos3" {
-  source = "./modules/exercices"
+  source   = "./modules/exercices"
   exercice = "exercice3"
 }
 ```
 
-Compte tenu qu'un nouveau module a été ajouté, il faut donc mettre à jour l'environnement Terraform:
+### Étape 6 : Mise à jour et déploiement
+
+1. **Mettre à jour l'environnement Terraform** (nécessaire après l'ajout d'un nouveau module) :
 ```bash
 terraform init
 ```
 
-Il est maintenant possible de déployer la nouvelle version du code:
+2. **Planifier et appliquer les changements** :
 ```bash
 terraform plan
 terraform apply
 ```
 
-Vous pouvez observer dans votre console *l'output* configuré précédemment:
-```bash
+### Vérification des résultats
+
+Après l'application, vous devriez voir l'output configuré dans votre console :
+
+```
 Outputs:
 
 file_path = "./message.txt"
 ```
-Les outputs peuvent toujours être retrouvés par `terraform output` !
 
-Vous devrez trouver un fichier MD (markdown) pour passer à l'exercice 3!
+**Note :** Les outputs peuvent toujours être consultés ultérieurement avec la commande :
+```bash
+terraform output
+```
+
+Pour voir un output spécifique :
+```bash
+terraform output file_path
+```
+
+### Validation
+
+À la fin de cet exercice, vous devrez trouver un nouveau fichier Markdown (MD) pour passer à [l'exercice 3](./exercice3.md) !
+
+### Conseils
+
+- Utilisez `terraform fmt` pour formater automatiquement votre code
+- Utilisez `terraform validate` pour vérifier la syntaxe avant d'appliquer
+- En cas d'erreur, lisez attentivement les messages d'erreur de Terraform

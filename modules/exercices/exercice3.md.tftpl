@@ -1,58 +1,119 @@
 # Bienvenue dans Terraform !
 
-### Exercice 3
+## Exercice 3 : Provider Random et gestion des secrets
 
-Nous allons maintenant utiliser le provider *random* pour générer un mot de passe aléatoire dans le module parent ou 'root':
-- Modifier le fichier main.tf afin d'utiliser le provider *random* 
-- Ajouter le bloque de code suivant:
+### Objectifs de cet exercice
+
+Dans cet exercice, nous allons apprendre à :
+- Utiliser le provider `random` de Terraform
+- Générer des mots de passe aléatoires
+- Gérer les données sensibles avec les outputs
+- Configurer les versions des providers
+
+### Étape 1 : Ajouter une ressource de mot de passe aléatoire
+
+Modifiez le fichier `main.tf` pour ajouter une ressource qui génère un mot de passe aléatoire :
+
 ```terraform
 resource "random_password" "password" {
   length  = 16
   special = true
 }
 ```
-Lors de l'ajout d'un nouveau provider, il est bon de définir sa source et un contrôle de version:
-- Modifier le fichier versions.tf en ajoutant le nouveau provider:
-```
+
+### Étape 2 : Configurer le provider random
+
+Lors de l'ajout d'un nouveau provider, il est recommandé de définir sa source et un contrôle de version.
+
+Modifiez le fichier `versions.tf` en ajoutant le nouveau provider :
+
+```terraform
 terraform {
   required_providers {
-    ...
-    random =  {
-      source = "hashicorp/random"
-      version = "= 3.7.2"
+    # ...existing code...
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.7.0"
     }
   }
 }
 ```
 
-Nous allons utiliser ce mot de passe plutard, mais rajouté le dans les outputs pour pouvoir y accéder.
-Pour ce faire nous devons donner l'instruction à Terraform que le secret est non 'sensitive'.
-- Modifier le fichier outputs.tf en ajoutant le contenu du secret créer:
-```
+**Note :** Nous utilisons `~> 3.7.0` pour permettre les mises à jour de patch tout en maintenant la compatibilité.
+
+### Étape 3 : Exposer le mot de passe via un output
+
+Nous allons exposer ce mot de passe dans les outputs pour pouvoir y accéder plus tard.
+
+**⚠️ Attention :** En production, évitez d'exposer des mots de passe dans les outputs. Ici, nous le faisons à des fins pédagogiques.
+
+Modifiez le fichier `outputs.tf` en ajoutant le contenu du secret créé :
+
+```terraform
 output "password" {
-  value = nonsensitive(random_password.password.result)
+  description = "Mot de passe généré aléatoirement (à des fins de démonstration uniquement)"
+  value       = nonsensitive(random_password.password.result)
 }
 ```
-Pour voir les autres attributs accessibles de cette ressource: https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password
 
-Nous allons maintenant appeler le module *exercice* avec l'exercice 4:
-- Rajouter un appel du module *exercice* avec l'exercice 4 
-```
+**Explication :** 
+- `nonsensitive()` indique à Terraform que cette valeur peut être affichée
+- En temps normal, les mots de passe sont marqués comme sensibles et masqués
+
+### Étape 4 : Ressources supplémentaires
+
+Pour voir tous les attributs accessibles de cette ressource, consultez la documentation officielle :
+[Provider Random - Password Resource](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password)
+
+### Étape 5 : Ajouter le module pour l'exercice 4
+
+Ajoutez un appel du module *exercice* pour l'exercice 4 dans `main.tf` :
+
+```terraform
 module "exos4" {
-  source = "./modules/exos"
+  source   = "./modules/exercices"
   exercice = "exercice4"
 }
 ```
 
-Compte tenu qu'un nouveau provider a été ajouté, il faut donc mettre à jour l'environnement Terraform:
+### Étape 6 : Mise à jour et déploiement
+
+1. **Mettre à jour l'environnement Terraform** (nécessaire après l'ajout d'un nouveau provider) :
 ```bash
 terraform init -upgrade
 ```
 
-Il est maintenant possible de déployer la nouvelle version du code:
+L'option `-upgrade` permet de mettre à jour les providers vers les dernières versions compatibles.
+
+2. **Planifier et appliquer les changements** :
 ```bash
 terraform plan
 terraform apply
 ```
 
-Vous devrez trouver un fichier MD (markdown) pour passer à l'exercice 4!
+### Vérification des résultats
+
+Après l'application, vous devriez voir les nouveaux outputs dans votre console :
+
+```
+Outputs:
+
+file_path = "./message.txt"
+password = "AbC123!@#XyZ456$"
+```
+
+### Bonnes pratiques de sécurité
+
+- **En production :** Ne jamais exposer de mots de passe dans les outputs
+- **Alternative :** Utilisez des systèmes de gestion de secrets comme AWS Secrets Manager, Azure Key Vault, ou HashiCorp Vault
+- **Logs :** Attention aux logs Terraform qui peuvent contenir des informations sensibles
+
+### Validation
+
+À la fin de cet exercice, vous devrez trouver un nouveau fichier Markdown (MD) pour passer à [l'exercice 4](./exercice4.md) !
+
+### Conseils de dépannage
+
+- Si `terraform init` échoue, vérifiez la syntaxe dans `versions.tf`
+- Utilisez `terraform providers` pour voir les providers installés
+- En cas de conflit de versions, utilisez `terraform init -upgrade`

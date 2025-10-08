@@ -1,50 +1,70 @@
 # Bienvenue dans Terraform !
 
-### Exercice 4
+## Exercice 4 : HashiCorp Vault et gestion sécurisée des secrets
 
-Dans le but de respecter les meilleurs pratiques, nous allons créer et utiliser une voûte Hashicorp pour enregistrer le secret créer auparavant !
+### Objectifs de cet exercice
 
-Enlever ou commenter l'output du mot de passe créer auparavant:
-```
-#output "password" {
-#  value = nonsensitive(random_password.password.result)
-#}
+Dans cet exercice, nous allons apprendre à :
+- Utiliser HashiCorp Vault pour stocker des secrets de manière sécurisée
+- Configurer et utiliser les providers Docker et Vault
+- Déployer Vault dans un conteneur Docker
+- Gérer les dépendances entre ressources Terraform
+
+**⚠️ Avertissement :** Cet exercice utilise une configuration de développement non sécurisée. Ne jamais utiliser ces paramètres en production !
+
+### Étape 1 : Sécuriser les outputs existants
+
+Pour respecter les meilleures pratiques de sécurité, commentez l'output du mot de passe créé précédemment dans `outputs.tf` :
+
+```terraform
+# output "password" {
+#   description = "Mot de passe généré aléatoirement (à des fins de démonstration uniquement)"
+#   value       = nonsensitive(random_password.password.result)
+# }
 ```
 
-Pour créer des conteneurs sur votre poste ainsi que d'utiliser la voûte à partir de Terraform, nous devons rajouter 2 nouveaux providers:
-Ajouter dans versions.tf:
-```
+### Étape 2 : Ajouter les nouveaux providers
+
+Pour créer des conteneurs Docker et utiliser Vault, ajoutez ces providers dans `versions.tf` :
+
+```terraform
 terraform {
   required_providers {
-    ...
+    # ...existing code...
     docker = {
       source  = "kreuzwerker/docker"
-      version = "= 3.6.2"
+      version = "~> 3.0"
     }
     vault = {
-      source = "hashicorp/vault"
-      version = "= 5.3.0"
+      source  = "hashicorp/vault"
+      version = "~> 4.0"
     }
   }
 }
 ```
-Ainsi qu'une configuration pour ces derniers, en créer un fichier providers.tf:
-```
+
+### Étape 3 : Configurer les providers
+
+Créez un nouveau fichier `providers.tf` avec la configuration des providers :
+
+```terraform
 provider "docker" {
-  host = "unix:///var/run/docker.sock" // Configuration pour Docker dans WSL
+  host = "unix:///var/run/docker.sock" # Configuration pour Docker (Linux/WSL)
 }
 
 provider "vault" {
   address = "http://127.0.0.1:8200"
-  token   = "root"
+  token   = "root" # ⚠️ Token de développement uniquement !
 }
 ```
 
-Notez que ce provider a besoin d'une ressource pour l'image qui seront téléchargé d'un registre ainsi que le conteneur à démarrer à partir de l'image.
+**Note :** Sur Windows sans WSL, utilisez `host = "npipe:////./pipe/docker_engine"`
 
-Démarrons un serveur d'Hashicorp Vault:
-- Créer un nouveau fichier vault.tf:
-```
+### Étape 4 : Déployer HashiCorp Vault
+
+Créez un nouveau fichier `vault.tf` pour déployer Vault dans un conteneur Docker :
+
+```terraform
 resource "docker_image" "vault" {
   name = "hashicorp/vault:1.20"
 }
@@ -60,7 +80,7 @@ resource "docker_container" "vault" {
 
   env = [
     "VAULT_DEV_ROOT_TOKEN_ID=root",
-    "VAULT_LOCAL_CONFIG={\"backend\":{\"file\":{\"path\":\"/vault/file\"}},\"tls_disable\":1}}"
+    "VAULT_LOCAL_CONFIG={\"backend\":{\"file\":{\"path\":\"/vault/file\"}},\"tls_disable\":1}"
   ]
 
   must_run = true
@@ -68,45 +88,91 @@ resource "docker_container" "vault" {
 }
 ```
 
-Il faut maintenant enregistrer le mot de passe dans la voûte:
-```
+### Étape 5 : Stocker le secret dans Vault
+
+Ajoutez cette ressource dans `vault.tf` pour enregistrer le mot de passe dans Vault :
+
+```terraform
 resource "vault_generic_secret" "mysql_pass" {
   path = "secret/mysql"
 
-  data_json = jsonencode(
+  data_json = jsonencode({
     username = "root"
     password = random_password.password.result
-  )
+  })
 
   depends_on = [docker_container.vault]
 }
 ```
-Notez que l'ajout à la voûte dépend de la disponibilité du serveur, ce qui explique ici une dépendance explicite avec le 'depends_on'.
 
-Nous allons maintenant appeler le module *exercice* avec l'exercice 5:
-- Rajouter un appel du module *exercice* avec l'exercice 5 
-```
+**Explication :** 
+- `depends_on` assure que le conteneur Vault est démarré avant d'essayer d'y stocker des secrets
+- `jsonencode()` convertit l'objet en JSON valide
+
+### Étape 6 : Ajouter le module pour l'exercice 5
+
+Ajoutez un appel du module *exercice* pour l'exercice 5 dans `main.tf` :
+
+```terraform
 module "exos5" {
-  source = "./modules/exos"
+  source   = "./modules/exercices"
   exercice = "exercice5"
 }
 ```
 
-Compte tenu qu'un nouveau provider a été ajouté, il faut donc mettre à jour l'environnement Terraform:
+### Étape 7 : Mise à jour et déploiement
+
+1. **Mettre à jour l'environnement Terraform** :
 ```bash
 terraform init -upgrade
 ```
 
-Il est maintenant possible de déployer la nouvelle version du code:
+2. **Planifier et appliquer les changements** :
 ```bash
 terraform plan
 terraform apply
 ```
 
-Vous devriez maintenant voir un conteneur qui roule: `docker ps`
+### Vérification des résultats
 
-Pour voir les logs du conteneur: `docker logs vault_container`
+#### Vérifier le conteneur Docker
+```bash
+docker ps
+```
 
-Notez que la vault a été démarré en mode 'dev' (sans authentification) pour faciliter cette exercice.
+Vous devriez voir un conteneur nommé `vault_container` en cours d'exécution.
 
-Vous devrez trouver un fichier MD (markdown) pour passer à l'exercice 5!
+#### Consulter les logs Vault
+```bash
+docker logs vault_container
+```
+
+#### Accéder à l'interface Web Vault
+Ouvrez votre navigateur à l'adresse : http://127.0.0.1:8200
+
+Token d'accès : `root`
+
+### Configuration de développement vs Production
+
+**⚠️ Important :** Cette configuration utilise le mode développement de Vault qui :
+- N'a pas d'authentification robuste
+- Stocke les données en mémoire
+- Utilise HTTP non chiffré
+- N'est PAS adapté à la production
+
+**En production, utilisez :**
+- Authentification forte (LDAP, AWS IAM, etc.)
+- Stockage persistant et chiffré
+- HTTPS avec certificats valides
+- Politique de secrets stricte
+
+### Validation
+
+À la fin de cet exercice, vous devrez trouver un nouveau fichier Markdown (MD) pour passer à [l'exercice 5](./exercice5.md) !
+
+### Dépannage courant
+
+- **Docker non disponible :** Vérifiez que Docker Desktop est démarré
+- **Port 8200 occupé :** Utilisez `netstat -an | grep 8200` pour vérifier
+- **Erreur de connexion Vault :** Attendez quelques secondes que le conteneur soit complètement démarré
+- **Problème de permissions :** Sur Linux, ajoutez votre utilisateur au groupe `docker`

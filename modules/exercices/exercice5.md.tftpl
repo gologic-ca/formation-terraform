@@ -1,17 +1,28 @@
 # Bienvenue dans Terraform !
 
-### Exercice 5
+## Exercice 5 : Déploiement d'une infrastructure avec MySQL
 
-Nous allons maintenant débuter la création de conteneurs Docker sur votre poste pour représenter une infrastructure:
-- Application web PHP (avec Nginx)
-- Serveur MySQL
+### Objectifs de cet exercice
 
-Démarrons par un serveur MySQL
+Dans cet exercice, nous allons apprendre à :
+- Déployer une base de données MySQL dans un conteneur Docker
+- Utiliser des variables d'environnement pour configurer MySQL
+- Monter des volumes pour l'initialisation de la base de données
+- Comprendre les bonnes et mauvaises pratiques de sécurité
 
-Créer un nouveau fichier mysql.tf:
-```
+### Vue d'ensemble de l'infrastructure
+
+Nous allons créer une infrastructure composée de :
+- **Application web PHP** (avec Nginx) - *sera ajoutée dans les exercices suivants*
+- **Serveur MySQL** - *que nous déployons dans cet exercice*
+
+### Étape 1 : Déployer un serveur MySQL
+
+Créez un nouveau fichier `mysql.tf` avec le contenu suivant :
+
+```terraform
 resource "docker_image" "mysql" {
-  name = "mysql:latest"
+  name = "mysql:8.0"
 }
 
 resource "docker_container" "mysql" {
@@ -29,38 +40,113 @@ resource "docker_container" "mysql" {
   ]
 
   mounts {
-    target = "/docker-entrypoint-initdb.d/"
-    source = "$${abspath(path.module)}/webapp-content/mysql/"
+    target    = "/docker-entrypoint-initdb.d/"
+    source    = "$${abspath(path.module)}/webapp-content/mysql/"
     read_only = true
-    type = "bind"
+    type      = "bind"
   }
 
   must_run = true
   restart  = "always"
 }
-
-Quelques notes:
-- Nous utilisons ici le mot de passe créer dans Terraform, mais nous pourrions dans un autre scénario, utilise une data source du provider 'vault' pour obtenir le secret: https://registry.terraform.io/providers/hashicorp/vault/latest/docs/data-sources/generic_secret
-- Nous utilisons le compte root pour une application, ce qui est contraire au meilleures pratiques
-
-
-Nous allons maintenant appeler le module *exercice* avec l'exercice 6:
-- Rajouter un appel du module *exercice* avec l'exercice 6 
 ```
+
+### Explication du code
+
+#### Variables d'environnement MySQL
+- `MYSQL_ROOT_PASSWORD` : Définit le mot de passe root (utilise notre mot de passe généré)
+- `MYSQL_DATABASE` : Crée automatiquement une base de données nommée "webapp"
+
+#### Montage de volume
+- **Target** : `/docker-entrypoint-initdb.d/` - Répertoire où MySQL exécute automatiquement les scripts d'initialisation
+- **Source** : `./webapp-content/mysql/` - Répertoire local contenant les scripts SQL d'initialisation
+- **Type** : `bind` - Monte directement un répertoire du système hôte
+
+### Étape 2 : Ajouter le module pour l'exercice 6
+
+Ajoutez un appel du module *exercice* pour l'exercice 6 dans `main.tf` :
+
+```terraform
 module "exos6" {
-  source = "./modules/exos"
+  source   = "./modules/exercices"
   exercice = "exercice6"
 }
 ```
 
-Il est maintenant possible de déployer la nouvelle version du code:
+### Étape 3 : Déploiement
+
+Déployez la nouvelle version du code :
+
 ```bash
 terraform plan
 terraform apply
 ```
 
-Vous devriez maintenant voir un conteneur 'mysql' qui roule: `docker ps`
+### Vérification des résultats
 
-Pour voir les logs du conteneur: `docker logs mysql_container`
+#### Vérifier les conteneurs en cours d'exécution
+```bash
+docker ps
+```
 
-Vous devrez trouver un fichier MD (markdown) pour passer à l'exercice 6!
+Vous devriez voir les conteneurs `vault_container` et `mysql_container` en cours d'exécution.
+
+#### Consulter les logs MySQL
+```bash
+docker logs mysql_container
+```
+
+Recherchez des messages comme :
+- `MySQL init process done. Ready for start up.`
+- `mysqld: ready for connections`
+
+#### Tester la connexion MySQL (optionnel)
+```bash
+docker exec -it mysql_container mysql -u root -p
+# Entrez le mot de passe généré par Terraform
+```
+
+### Considérations de sécurité
+
+#### ⚠️ Mauvaises pratiques (à des fins pédagogiques)
+1. **Utilisation du compte root** : En production, créez des utilisateurs dédiés avec des privilèges limités
+2. **Port exposé publiquement** : Le port 3306 est accessible depuis l'extérieur
+3. **Mot de passe en variable d'environnement** : Visible dans `docker inspect`
+
+### Alternative avec Vault (information)
+
+Au lieu d'utiliser directement le mot de passe généré, nous pourrions récupérer un secret Vault (créer en amont):
+
+```terraform
+data "vault_generic_secret" "mysql_creds" {
+  path = "secret/mysql"
+}
+
+# Puis utiliser : data.vault_generic_secret.mysql_creds.data["password"]
+```
+
+**Documentation** : [Vault Generic Secret Data Source](https://registry.terraform.io/providers/hashicorp/vault/latest/docs/data-sources/generic_secret)
+
+### Validation
+
+À la fin de cet exercice, vous devrez trouver un nouveau fichier Markdown (MD) pour passer à [l'exercice 6](./exercice6.md) !
+
+### Dépannage courant
+
+- **Erreur de port occupé** : `docker stop mysql_container` puis relancez Terraform
+- **Problème de montage** : Vérifiez que le répertoire `webapp-content/mysql/` existe
+- **MySQL ne démarre pas** : Consultez les logs avec `docker logs mysql_container`
+- **Problème de permissions** : Sur Linux, vérifiez les permissions du répertoire monté
+
+### Commandes utiles
+
+```bash
+# Arrêter le conteneur MySQL
+docker stop mysql_container
+
+# Supprimer le conteneur MySQL
+docker rm mysql_container
+
+# Voir l'utilisation des ressources
+docker stats mysql_container
+```

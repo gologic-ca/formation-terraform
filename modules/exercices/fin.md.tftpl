@@ -1,27 +1,57 @@
 # Bienvenue dans Terraform !
 
-### Félicitation
+## 🎉 Félicitations !
 
-Cet atelier est terminé. Vous avez appris les bases de Terraform.
+Cet atelier est terminé. Vous avez appris les bases de Terraform et créé une infrastructure complète comprenant :
 
-Pour aller plus loin, vous pouvez continuer en faisant les exercices plus bas, sinon vous pouvez nettoyer votre environnement avec la commande suivante:
+✅ **Gestion des fichiers locaux** avec le provider `local`  
+✅ **Génération de secrets** avec le provider `random`  
+✅ **Gestion sécurisée des secrets** avec HashiCorp Vault  
+✅ **Conteneurisation** avec Docker  
+✅ **Base de données** MySQL  
+✅ **Serveur web** Nginx + PHP  
+
+## Nettoyage de l'environnement
+
+Pour nettoyer votre environnement et supprimer toutes les ressources créées :
+
 ```bash
 terraform destroy
 ```
 
-### Pour aller plus loin
+**⚠️ Attention :** Cette commande supprimera définitivement tous les conteneurs et fichiers créés.
 
-Créer plusieurs ressources avec une boucle *for_each* :
-```
+## 🚀 Pour aller plus loin
+
+### Exercice avancé 1 : Boucles avec `for_each`
+
+Apprenez à créer plusieurs ressources similaires en utilisant une boucle `for_each`.
+
+Ajoutez cette variable dans `variables.tf` :
+
+```terraform
 variable "files" {
-  type    = map(string)
+  type        = map(string)
+  description = "Fichiers à créer avec leur contenu"
   default = {
     "file1.txt" = "Ceci est le premier fichier."
     "file2.txt" = "Deuxième fichier généré par Terraform."
     "file3.txt" = "Encore un autre fichier !"
   }
 }
+```
 
+Réactive la variable author:
+```terraform
+variable "author" {
+  type        = string
+  description = "Fournir votre nom comme auteur"
+}
+```
+
+Puis ajoutez cette ressource dans `main.tf` :
+
+```terraform
 resource "local_file" "multi_files" {
   for_each = var.files
 
@@ -30,23 +60,141 @@ resource "local_file" "multi_files" {
 }
 ```
 
-Créer un fichier dynamiquement à l'aide d'un template:
-- Créer un fichier template *template.md.tftpl*:
-```
+**Avantages de `for_each` :**
+- Crée une ressource par élément de la map
+- `each.key` = nom du fichier
+- `each.value` = contenu du fichier
+- Plus maintenable que de dupliquer le code
+
+### Exercice avancé 2 : Templates dynamiques
+
+Créez des fichiers dynamiquement à l'aide de templates Terraform.
+
+1. **Créez un fichier template** `template.md.tftpl` :
+
+```markdown
 # Bienvenue dans Terraform !
 
 ## Auteur : $${author}
 ## Date de création : $${timestamp}
+## Environnement : $${environment}
 
 Terraform est un outil d'Infrastructure as Code puissant !
+
+### Statistiques du déploiement
+- Nombre de fichiers créés : $${file_count}
+- Version de Terraform : $${tf_version}
 ```
-- Ajouter le code suivant au fichier main.tf
+
+2. **Ajoutez ces variables** dans `variables.tf` :
+
+```terraform
+variable "environment" {
+  type        = string
+  description = "Environnement de déploiement"
+  default     = "development"
+}
 ```
+
+3. **Ajoutez cette ressource** dans `main.tf` :
+
+```terraform
 resource "local_file" "config" {
   filename = "$${path.module}/config.md"
-  content  = templatefile("$${path.module}/template.md.tftpl", {
-    author    = var.author
-    timestamp = timestamp()
+  content = templatefile("$${path.module}/template.md.tftpl", {
+    author      = var.author
+    timestamp   = timestamp()
+    environment = var.environment
+    file_count  = length(var.files)
+    tf_version  = "1.x.x"
   })
 }
 ```
+
+### Exercice avancé 3 : Conditions et logique
+
+Utilisez des conditions pour adapter le comportement selon l'environnement.
+
+```terraform
+resource "local_file" "env_config" {
+  filename = "$${path.module}/env-$${var.environment}.json"
+  content = jsonencode({
+    environment = var.environment
+    debug_mode  = var.environment == "development" ? true : false
+    log_level   = var.environment == "production" ? "error" : "debug"
+    database_url = var.environment == "production" ? "mysql://prod-server:3306/webapp" : "mysql://mysql_container:3306/webapp"
+  })
+}
+```
+
+### Exercice avancé 4 : Outputs complexes
+
+Créez des outputs plus sophistiqués dans `outputs.tf` :
+
+```terraform
+output "infrastructure_summary" {
+  description = "Résumé de l'infrastructure déployée"
+  value = {
+    containers = {
+      vault = docker_container.vault.name
+      mysql = docker_container.mysql.name
+      nginx = docker_container.nginx_php.name
+    }
+    ports = {
+      vault_ui = "http://localhost:8200"
+      webapp   = "http://localhost:8080"
+      mysql    = "localhost:3306"
+    }
+    files_created = length(local_file.multi_files)
+    environment   = var.environment
+  }
+}
+
+output "connection_strings" {
+  description = "Chaînes de connexion pour les services"
+  value = {
+    mysql_internal = "mysql://root:$${nonsensitive(random_password.password.result)}@mysql_container:3306/webapp"
+    vault_ui       = "http://localhost:8200 (token: root)"
+  }
+  sensitive = true
+}
+```
+
+## 📚 Ressources pour approfondir
+
+### Concepts Terraform avancés à explorer
+- **Modules** : Réutilisabilité et organisation du code
+- **Workspaces** : Gestion de plusieurs environnements
+- **Remote State** : Stockage distant de l'état (S3, Consul, etc.)
+- **State Locking** : Prévention des conflits en équipe
+- **Import** : Intégration de ressources existantes
+- **Provisioners** : Exécution de scripts post-déploiement
+
+### Providers populaires
+- **AWS** : `hashicorp/aws`
+- **Azure** : `hashicorp/azurerm`
+- **Google Cloud** : `hashicorp/google`
+- **Kubernetes** : `hashicorp/kubernetes`
+- **Helm** : `hashicorp/helm`
+
+### Outils complémentaires
+- **Terragrunt** : Wrapper pour la gestion de configurations complexes
+- **Atlantis** : CI/CD pour Terraform
+- **Terraform Cloud** : Plateforme SaaS HashiCorp
+- **Checkov** : Analyse de sécurité pour Terraform
+
+## 🎯 Prochaines étapes recommandées
+
+1. **Pratiquez avec un cloud provider** (AWS, Azure, GCP)
+2. **Apprenez les modules Terraform** pour la réutilisabilité
+3. **Explorez Terraform Cloud** pour la collaboration
+4. **Intégrez Terraform dans un pipeline CI/CD**
+5. **Étudiez les bonnes pratiques de sécurité**
+
+## 📖 Documentation officielle
+
+- [Terraform Documentation](https://www.terraform.io/docs)
+- [Terraform Registry](https://registry.terraform.io/)
+- [HashiCorp Learn](https://learn.hashicorp.com/terraform)
+
+**Félicitations encore une fois !** Vous avez maintenant les bases solides pour utiliser Terraform dans vos projets d'Infrastructure as Code. 🚀

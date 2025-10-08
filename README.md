@@ -1,29 +1,79 @@
 # Atelier Terraform
 
-Cet atelier va vous apprendre les bases de Terraform.
-Toutes les instruction apparaitront dans ce document au fur et a mesure des exercices.
+Cet atelier va vous apprendre les bases de Terraform à travers différents exercices.
 
-Pour cloner le dépôt, utiliser une des commandes suivantes: `git clone https://github.com/gologic-ca/formation-terraform.git`
+## Prérequis
 
-Ou si vous avez déjà un compte Github et une clef SSH: `git clone git@github.com:gologic-ca/formation-terraform.git`
+- Terraform installé sur votre poste
+- Git installé
+- Un éditeur de texte
 
-Pour vérifier que terraform est bien disponible sur votre poste et voir sa version, utiliser la commande suivante:
+## Installation
+
+Pour cloner le dépôt, utilisez une des commandes suivantes :
+
+**HTTPS :**
+```bash
+git clone https://github.com/gologic-ca/formation-terraform.git
+```
+
+**SSH (si vous avez déjà un compte GitHub et une clé SSH) :**
+```bash
+git clone git@github.com:gologic-ca/formation-terraform.git
+```
+
+## Vérification de l'installation
+
+Pour vérifier que Terraform est bien disponible sur votre poste et voir sa version, utilisez la commande suivante :
 ```bash
 terraform version
 ```
 
-Vous verrez plusieurs fichiers:
-- main.tf contient le code principal du projet
-- variables.tf contient les différentes variables du projet
-- versions.tf contient le contrôle des versions
-
-## Exercice 1
-Dans ce premier exercice, nous allons créer un fichier local à l'aide de Terraform. Examinez le code puis exécutez le à l'aide des commandes suivantes:
-```bash
-terraform init # Initialise l'environnement terraform
-terraform plan # Test le code et affiche les ressources qui vont être créés, modifiées ou supprimées
-terraform apply # Applique les changements affichées par la commande précédente
+Vous devriez voir une sortie similaire à :
+```
+Terraform v1.x.x
 ```
 
-Notez que les deux commandes plan et apply demande une variable requise - soit votre nom comme auteur.
-Vous devrez trouver votre fichier de bonjour ainsi qu'un fichier MD (markdown) pour passer à l'exercice 2!
+## Structure du projet
+
+Vous verrez plusieurs fichiers :
+- `main.tf` : contient le code principal du projet
+- `variables.tf` : contient les différentes variables du projet
+- `versions.tf` : contient le contrôle des versions des providers
+
+## Exercice 1 : Création d'un fichier local
+
+Dans ce premier exercice, nous allons créer un fichier local à l'aide de Terraform. 
+
+### Étapes à suivre
+
+1. Examinez le code dans les fichiers `.tf`
+2. Exécutez les commandes suivantes dans l'ordre :
+
+```bash
+# Initialise l'environnement Terraform et télécharge les providers nécessaires
+terraform init
+
+# Teste le code et affiche les ressources qui vont être créées, modifiées ou supprimées
+terraform plan
+
+# Applique les changements affichés par la commande précédente
+terraform apply
+```
+
+### Variables requises
+
+Les commandes `plan` et `apply` demandent une variable requise : **votre nom comme auteur**.
+
+Vous pouvez fournir cette variable de plusieurs façons :
+- Interactivement quand Terraform vous le demande
+- En ligne de commande : `terraform apply -var="author=VotreNom"`
+- Dans un fichier `terraform.tfvars`
+
+### Objectif
+
+À la fin de cet exercice, vous devrez trouver :
+- Un fichier de bonjour créé localement
+- Un fichier Markdown (MD) généré pour l'exercice 2
+
+Une fois ces fichiers créés, vous pourrez passer à [l'exercice 2](./exercice2.md) !
