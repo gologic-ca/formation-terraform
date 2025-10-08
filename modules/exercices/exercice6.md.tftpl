@@ -1,0 +1,55 @@
+# Bienvenue dans Terraform !
+
+### Exercice 6
+
+Continuous avec un serveur Nginx pour héberger notre application web PHP
+
+Créer un nouveau fichier nginx.tf:
+```
+resource "docker_image" "nginx_php" {
+  name = "trafex/php-nginx:3.9.0"
+}
+
+resource "docker_container" "nginx_php" {
+  name  = "nginx_php"
+  image = docker_image.nginx_php.image_id
+
+  ports {
+    internal = 8080
+    external = 8080
+  }
+
+  mounts {
+    target = "/var/www/html"
+    source = "$${abspath(path.module)}/webapp-content/nginx-php/html"
+    read_only = true
+    type = "bind"
+  }
+
+  must_run = true
+  restart  = "always"
+}
+```
+
+Nous allons maintenant appeler le module *exercice* avec l'exercice de fin:
+- Rajouter un appel du module *exercice* avec l'exercice 'fin' 
+```
+module "exos_fin" {
+  source = "./modules/exos"
+  exercice = "fin"
+}
+```
+
+Il est maintenant possible de déployer la nouvelle version du code:
+```bash
+terraform plan
+terraform apply
+```
+
+Vous devriez maintenant voir un conteneur 'nginx_php' qui roule: `docker ps`
+Pour voir les logs du conteneur: `docker logs nginx_php`
+
+
+Accéder à l'application avec http://localhost:8080
+
+Vous devrez trouver un fichier MD (markdown) pour passer à l'exercice de fin!

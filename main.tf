@@ -1,22 +1,9 @@
-terraform {
-  required_providers {
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.0"
-    }
-  }
+module "exos2" {
+  source   = "./modules/exercices"
+  exercice = "exercice2"
 }
 
-provider "local" {}
-
-module "exos" {
-  source = "./modules/exos"
-  exercice = "exo2"
+resource "local_file" "message_bonjour" {
+  filename = "${path.module}/message.txt"
+  content  = "Bonjour, ce fichier est généré par Terraform ! Signé par ${var.author}"
 }
-
-resource "local_file" "example" {
-  filename = "${path.module}/message.txt" # Linux
-  # filename = "${path.module}\\message.txt" # Windows
-  content  = "Bonjour, ce fichier est généré par Terraform !"
-}
-

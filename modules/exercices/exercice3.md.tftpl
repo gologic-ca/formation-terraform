@@ -1,0 +1,58 @@
+# Bienvenue dans Terraform !
+
+### Exercice 3
+
+Nous allons maintenant utiliser le provider *random* pour générer un mot de passe aléatoire dans le module parent ou 'root':
+- Modifier le fichier main.tf afin d'utiliser le provider *random* 
+- Ajouter le bloque de code suivant:
+```terraform
+resource "random_password" "password" {
+  length  = 16
+  special = true
+}
+```
+Lors de l'ajout d'un nouveau provider, il est bon de définir sa source et un contrôle de version:
+- Modifier le fichier versions.tf en ajoutant le nouveau provider:
+```
+terraform {
+  required_providers {
+    ...
+    random =  {
+      source = "hashicorp/random"
+      version = "= 3.7.2"
+    }
+  }
+}
+```
+
+Nous allons utiliser ce mot de passe plutard, mais rajouté le dans les outputs pour pouvoir y accéder.
+Pour ce faire nous devons donner l'instruction à Terraform que le secret est non 'sensitive'.
+- Modifier le fichier outputs.tf en ajoutant le contenu du secret créer:
+```
+output "password" {
+  value = nonsensitive(random_password.password.result)
+}
+```
+Pour voir les autres attributs accessibles de cette ressource: https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password
+
+Nous allons maintenant appeler le module *exercice* avec l'exercice 4:
+- Rajouter un appel du module *exercice* avec l'exercice 4 
+```
+module "exos4" {
+  source = "./modules/exos"
+  exercice = "exercice4"
+}
+```
+
+Compte tenu qu'un nouveau provider a été ajouté, il faut donc mettre à jour l'environnement Terraform:
+```bash
+terraform init -upgrade
+```
+
+Il est maintenant possible de déployer la nouvelle version du code:
+```bash
+terraform plan
+terraform apply
+```
+
+Vous devrez trouver un fichier MD (markdown) pour passer à l'exercice 4!

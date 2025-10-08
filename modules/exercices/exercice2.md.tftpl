@@ -1,0 +1,71 @@
+# Bienvenue dans Terraform !
+
+### Exercice 2
+
+Vous pouvez consulter l'état courant de votre environnement avec les commandes suivantes:
+```
+terraform state list #Lister les différentes ressources de l'environnement
+terraform state show <state> #Décrire une ressource en particulier 
+```
+
+Nous allons voir comment utiliser des variables et récupérer des valeurs de sortie de notre code (dans le module parent ou 'root'):
+- Créer un fichier outputs.tf avec le code suivant:
+```terraform
+output "file_path" {
+  value = local_file.message_bonjour.filename
+}
+```
+- Modifier le fichier variables.tf pour ajouter une nouvelle variable:
+```terraform
+variable "message" {
+  type = string
+  description = "Message personnalisé"
+  default = "Ceci est un message personnalisé."
+}
+```
+- Modifier le fichier main.tf pour utiliser la variable crée:
+```
+resource "local_file" "message_bonjour" {
+  filename = "$${path.module}/message.txt"
+  content  = var.message
+}
+```
+
+Compte tenu que la variable n'est plus utilisé dans le message, commenter là:
+Modifier dans le fichier variables.tf
+```
+#variable "author" {
+#  type        = string
+#  description = "Fournir votre nom comme auteur"
+#}
+```
+
+Nous allons maintenant appeler le module *exercice* avec l'exercice 3:
+- Rajouter un appel du module *exercice* avec l'exercice 3 
+```terraform
+module "exos3" {
+  source = "./modules/exercices"
+  exercice = "exercice3"
+}
+```
+
+Compte tenu qu'un nouveau module a été ajouté, il faut donc mettre à jour l'environnement Terraform:
+```bash
+terraform init
+```
+
+Il est maintenant possible de déployer la nouvelle version du code:
+```bash
+terraform plan
+terraform apply
+```
+
+Vous pouvez observer dans votre console *l'output* configuré précédemment:
+```bash
+Outputs:
+
+file_path = "./message.txt"
+```
+Les outputs peuvent toujours être retrouvés par `terraform output` !
+
+Vous devrez trouver un fichier MD (markdown) pour passer à l'exercice 3!

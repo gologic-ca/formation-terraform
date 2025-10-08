@@ -1,0 +1,112 @@
+# Bienvenue dans Terraform !
+
+### Exercice 4
+
+Dans le but de respecter les meilleurs pratiques, nous allons créer et utiliser une voûte Hashicorp pour enregistrer le secret créer auparavant !
+
+Enlever ou commenter l'output du mot de passe créer auparavant:
+```
+#output "password" {
+#  value = nonsensitive(random_password.password.result)
+#}
+```
+
+Pour créer des conteneurs sur votre poste ainsi que d'utiliser la voûte à partir de Terraform, nous devons rajouter 2 nouveaux providers:
+Ajouter dans versions.tf:
+```
+terraform {
+  required_providers {
+    ...
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "= 3.6.2"
+    }
+    vault = {
+      source = "hashicorp/vault"
+      version = "= 5.3.0"
+    }
+  }
+}
+```
+Ainsi qu'une configuration pour ces derniers, en créer un fichier providers.tf:
+```
+provider "docker" {
+  host = "unix:///var/run/docker.sock" // Configuration pour Docker dans WSL
+}
+
+provider "vault" {
+  address = "http://127.0.0.1:8200"
+  token   = "root"
+}
+```
+
+Notez que ce provider a besoin d'une ressource pour l'image qui seront téléchargé d'un registre ainsi que le conteneur à démarrer à partir de l'image.
+
+Démarrons un serveur d'Hashicorp Vault:
+- Créer un nouveau fichier vault.tf:
+```
+resource "docker_image" "vault" {
+  name = "hashicorp/vault:1.20"
+}
+
+resource "docker_container" "vault" {
+  name  = "vault_container"
+  image = docker_image.vault.image_id
+
+  ports {
+    internal = 8200
+    external = 8200
+  }
+
+  env = [
+    "VAULT_DEV_ROOT_TOKEN_ID=root",
+    "VAULT_LOCAL_CONFIG={\"backend\":{\"file\":{\"path\":\"/vault/file\"}},\"tls_disable\":1}}"
+  ]
+
+  must_run = true
+  restart  = "always"
+}
+```
+
+Il faut maintenant enregistrer le mot de passe dans la voûte:
+```
+resource "vault_generic_secret" "mysql_pass" {
+  path = "secret/mysql"
+
+  data_json = jsonencode(
+    username = "root"
+    password = random_password.password.result
+  )
+
+  depends_on = [docker_container.vault]
+}
+```
+Notez que l'ajout à la voûte dépend de la disponibilité du serveur, ce qui explique ici une dépendance explicite avec le 'depends_on'.
+
+Nous allons maintenant appeler le module *exercice* avec l'exercice 5:
+- Rajouter un appel du module *exercice* avec l'exercice 5 
+```
+module "exos5" {
+  source = "./modules/exos"
+  exercice = "exercice5"
+}
+```
+
+Compte tenu qu'un nouveau provider a été ajouté, il faut donc mettre à jour l'environnement Terraform:
+```bash
+terraform init -upgrade
+```
+
+Il est maintenant possible de déployer la nouvelle version du code:
+```bash
+terraform plan
+terraform apply
+```
+
+Vous devriez maintenant voir un conteneur qui roule: `docker ps`
+
+Pour voir les logs du conteneur: `docker logs vault_container`
+
+Notez que la vault a été démarré en mode 'dev' (sans authentification) pour faciliter cette exercice.
+
+Vous devrez trouver un fichier MD (markdown) pour passer à l'exercice 5!

@@ -1,0 +1,66 @@
+# Bienvenue dans Terraform !
+
+### Exercice 5
+
+Nous allons maintenant débuter la création de conteneurs Docker sur votre poste pour représenter une infrastructure:
+- Application web PHP (avec Nginx)
+- Serveur MySQL
+
+Démarrons par un serveur MySQL
+
+Créer un nouveau fichier mysql.tf:
+```
+resource "docker_image" "mysql" {
+  name = "mysql:latest"
+}
+
+resource "docker_container" "mysql" {
+  name  = "mysql_container"
+  image = docker_image.mysql.image_id
+
+  ports {
+    internal = 3306
+    external = 3306
+  }
+
+  env = [
+    "MYSQL_ROOT_PASSWORD=$${random_password.password.result}",
+    "MYSQL_DATABASE=webapp",
+  ]
+
+  mounts {
+    target = "/docker-entrypoint-initdb.d/"
+    source = "$${abspath(path.module)}/webapp-content/mysql/"
+    read_only = true
+    type = "bind"
+  }
+
+  must_run = true
+  restart  = "always"
+}
+
+Quelques notes:
+- Nous utilisons ici le mot de passe créer dans Terraform, mais nous pourrions dans un autre scénario, utilise une data source du provider 'vault' pour obtenir le secret: https://registry.terraform.io/providers/hashicorp/vault/latest/docs/data-sources/generic_secret
+- Nous utilisons le compte root pour une application, ce qui est contraire au meilleures pratiques
+
+
+Nous allons maintenant appeler le module *exercice* avec l'exercice 6:
+- Rajouter un appel du module *exercice* avec l'exercice 6 
+```
+module "exos6" {
+  source = "./modules/exos"
+  exercice = "exercice6"
+}
+```
+
+Il est maintenant possible de déployer la nouvelle version du code:
+```bash
+terraform plan
+terraform apply
+```
+
+Vous devriez maintenant voir un conteneur 'mysql' qui roule: `docker ps`
+
+Pour voir les logs du conteneur: `docker logs mysql_container`
+
+Vous devrez trouver un fichier MD (markdown) pour passer à l'exercice 6!
