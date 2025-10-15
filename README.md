@@ -1,9 +1,10 @@
 # Atelier Terraform
 
-Cet atelier va vous apprendre les bases de Terraform à travers différents exercices.
+Cet atelier vous permettra d'apprendre les bases de Terraform à travers différents exercices.
 
 ## Prérequis
 
+- Docker Engine ou Desktop (WSL2)
 - Terraform installé sur votre poste
 - Git installé
 - Un éditeur de texte
@@ -41,9 +42,22 @@ Vous verrez plusieurs fichiers :
 - `variables.tf` : contient les différentes variables du projet
 - `versions.tf` : contient le contrôle des versions des providers
 
+Aussi:
+- `modules` : contient le code pour générer les prochais exercices en Markdown (.md).
+- `webapp-content`: contient du code pour un application web déployée pendant l'exercice
+
+
 ## Exercice 1 : Création d'un fichier local
 
-Dans ce premier exercice, nous allons créer un fichier local à l'aide de Terraform. 
+Dans ce premier exercice, nous allons créer un fichier local à l'aide de Terraform.
+
+### Objectifs de cet exercice
+
+Dans cet exercice, nous allons apprendre à :
+- Apprendre les commandes Terraform de bases
+- Utilisation de variable
+- L'appel d'un module enfant
+- Utiliser le provider 'local' pour créer un fichier local
 
 ### Étapes à suivre
 

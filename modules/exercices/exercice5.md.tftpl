@@ -110,7 +110,7 @@ docker exec -it mysql_container mysql -u root -p
 
 #### ⚠️ Mauvaises pratiques (à des fins pédagogiques)
 1. **Utilisation du compte root** : En production, créez des utilisateurs dédiés avec des privilèges limités
-2. **Port exposé publiquement** : Le port 3306 est accessible depuis l'extérieur
+2. **Port exposé** : Le port 3306 est ouvert sur votre poste
 3. **Mot de passe en variable d'environnement** : Visible dans `docker inspect`
 
 ### Alternative avec Vault (information)
