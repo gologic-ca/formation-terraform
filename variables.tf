@@ -1,9 +1,4 @@
 variable "author" {
-  type = string
-  default = "Utilisateur Terraform"
+  type        = string
+  description = "Fournir votre nom comme auteur"
 }
-
-variable "exercice" {
-  type = string
-  default = "exo2"
-}	

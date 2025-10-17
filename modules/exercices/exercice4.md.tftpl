@@ -1,0 +1,178 @@
+# Bienvenue dans Terraform !
+
+## Exercice 4 : HashiCorp Vault et gestion sécurisée des secrets
+
+### Objectifs de cet exercice
+
+Dans cet exercice, nous allons apprendre à :
+- Utiliser HashiCorp Vault pour stocker des secrets de manière sécurisée
+- Configurer et utiliser les providers Docker et Vault
+- Déployer Vault dans un conteneur Docker
+- Gérer les dépendances entre ressources Terraform
+
+**⚠️ Avertissement :** Cet exercice utilise une configuration de développement non sécurisée. Ne jamais utiliser ces paramètres en production !
+
+### Étape 1 : Sécuriser les outputs existants
+
+Pour respecter les meilleures pratiques de sécurité, commentez l'output du mot de passe créé précédemment dans `outputs.tf` :
+
+```terraform
+# output "password" {
+#   description = "Mot de passe généré aléatoirement (à des fins de démonstration uniquement)"
+#   value       = nonsensitive(random_password.password.result)
+# }
+```
+
+### Étape 2 : Ajouter les nouveaux providers
+
+Pour créer des conteneurs Docker et utiliser Vault, ajoutez ces providers dans `versions.tf` :
+
+```terraform
+terraform {
+  required_providers {
+    # ...existing code...
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 3.0"
+    }
+    vault = {
+      source  = "hashicorp/vault"
+      version = "~> 4.0"
+    }
+  }
+}
+```
+
+### Étape 3 : Configurer les providers
+
+Créez un nouveau fichier `providers.tf` avec la configuration des providers :
+
+```terraform
+provider "docker" {
+  host = "unix:///var/run/docker.sock" # Configuration pour Docker (Linux/WSL)
+}
+
+provider "vault" {
+  address = "http://127.0.0.1:8200"
+  token   = "root" # ⚠️ Token de développement uniquement !
+}
+```
+
+**Note :** Sur Windows sans WSL, utilisez `host = "npipe:////./pipe/docker_engine"`
+
+### Étape 4 : Déployer HashiCorp Vault
+
+Créez un nouveau fichier `vault.tf` pour déployer Vault dans un conteneur Docker :
+
+```terraform
+resource "docker_image" "vault" {
+  name = "hashicorp/vault:1.20"
+}
+
+resource "docker_container" "vault" {
+  name  = "vault_container"
+  image = docker_image.vault.image_id
+
+  ports {
+    internal = 8200
+    external = 8200
+  }
+
+  env = [
+    "VAULT_DEV_ROOT_TOKEN_ID=root",
+    "VAULT_LOCAL_CONFIG={\"backend\":{\"file\":{\"path\":\"/vault/file\"}},\"tls_disable\":1}"
+  ]
+
+  must_run = true
+  restart  = "always"
+}
+```
+
+### Étape 5 : Stocker le secret dans Vault
+
+Ajoutez cette ressource dans `vault.tf` pour enregistrer le mot de passe dans Vault :
+
+```terraform
+resource "vault_generic_secret" "mysql_pass" {
+  path = "secret/mysql"
+
+  data_json = jsonencode({
+    username = "root"
+    password = random_password.password.result
+  })
+
+  depends_on = [docker_container.vault]
+}
+```
+
+**Explication :** 
+- `depends_on` assure que le conteneur Vault est démarré avant d'essayer d'y stocker des secrets
+- `jsonencode()` convertit l'objet en JSON valide
+
+### Étape 6 : Ajouter le module pour l'exercice 5
+
+Ajoutez un appel du module *exercice* pour l'exercice 5 dans `main.tf` :
+
+```terraform
+module "exos5" {
+  source   = "./modules/exercices"
+  exercice = "exercice5"
+}
+```
+
+### Étape 7 : Mise à jour et déploiement
+
+1. **Mettre à jour l'environnement Terraform** :
+```bash
+terraform init -upgrade
+```
+
+2. **Planifier et appliquer les changements** :
+```bash
+terraform plan
+terraform apply
+```
+
+### Vérification des résultats
+
+#### Vérifier le conteneur Docker
+```bash
+docker ps
+```
+
+Vous devriez voir un conteneur nommé `vault_container` en cours d'exécution.
+
+#### Consulter les logs Vault
+```bash
+docker logs vault_container
+```
+
+#### Accéder à l'interface Web Vault
+Ouvrez votre navigateur à l'adresse : http://127.0.0.1:8200
+
+Token d'accès : `root`
+
+### Configuration de développement vs Production
+
+**⚠️ Important :** Cette configuration utilise le mode développement de Vault qui :
+- N'a pas d'authentification robuste
+- Stocke les données en mémoire
+- Utilise HTTP non chiffré
+- N'est PAS adapté à la production
+
+**En production, utilisez :**
+- Authentification forte (LDAP, AWS IAM, etc.)
+- Stockage persistant et chiffré
+- HTTPS avec certificats valides
+- Politique de secrets stricte
+
+### Validation
+
+À la fin de cet exercice, vous devrez trouver un nouveau fichier Markdown (MD) pour passer à [l'exercice 5](./exercice5.md) !
+
+### Dépannage courant
+
+- **Docker non disponible :** Vérifiez que Docker Desktop est démarré
+- **Port 8200 occupé :** Utilisez `netstat -an | grep 8200` pour vérifier
+- **Erreur de connexion Vault :** Attendez quelques secondes que le conteneur soit complètement démarré
+- **Problème de permissions :** Sur Linux, ajoutez votre utilisateur au groupe `docker`

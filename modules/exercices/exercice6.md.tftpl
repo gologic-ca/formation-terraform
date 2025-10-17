@@ -1,0 +1,127 @@
+# Bienvenue dans Terraform !
+
+## Exercice 6 : Serveur Web Nginx avec PHP
+
+### Objectifs de cet exercice
+
+Dans cet exercice, nous allons apprendre à :
+- Déployer un serveur web Nginx avec support PHP
+- Configurer le montage de volumes pour le code de l'application
+- Tester l'intégration entre les services web et base de données
+- Finaliser notre stack d'infrastructure complète
+
+### Vue d'ensemble de l'infrastructure finale
+
+Notre infrastructure complète comprend maintenant :
+- ✅ **HashiCorp Vault** - Gestion sécurisée des secrets
+- ✅ **Serveur MySQL** - Base de données
+- 🔄 **Serveur Nginx + PHP** - Application web *(cet exercice)*
+
+### Étape 1 : Déployer le serveur Nginx avec PHP
+
+Créez un nouveau fichier `nginx.tf` avec le contenu suivant :
+
+```terraform
+resource "docker_image" "nginx_php" {
+  name = "trafex/php-nginx:3.9.0"
+}
+
+resource "docker_container" "nginx_php" {
+  name  = "nginx_php"
+  image = docker_image.nginx_php.image_id
+
+  ports {
+    internal = 8080
+    external = 8080
+  }
+ 
+  env = [
+    "MYSQL_HOSTNAME=host.docker.internal", #For non Docker-Desktop users use 172.17.0.1
+    "DB_PASSWORD=$${random_password.password.result}",
+  ]
+
+  mounts {
+    target    = "/var/www/html"
+    source    = "$${abspath(path.module)}/webapp-content/nginx-php/html"
+    read_only = true
+    type      = "bind"
+  }
+
+  must_run = true
+  restart  = "always"
+
+  depends_on = [docker_container.mysql]
+}
+```
+
+### Explication du code
+
+#### Image Docker
+- **trafex/php-nginx:3.9.0** : Image optimisée combinant Nginx et PHP-FPM
+- Configuration légère et sécurisée pour les applications PHP
+
+#### Configuration des ports
+- **Port interne** : 8080 (port d'écoute dans le conteneur)
+- **Port externe** : 8080 (port accessible depuis l'hôte)
+
+#### Montage de volume
+- **Target** : `/var/www/html` - Répertoire racine du serveur web
+- **Source** : `./webapp-content/nginx-php/html` - Code source de l'application PHP
+- **Read-only** : Empêche les modifications du code depuis le conteneur
+
+### Étape 2 : Ajouter le module de fin
+
+Ajoutez un appel du module *exercice* pour l'exercice de fin dans `main.tf` :
+
+```terraform
+module "exos_fin" {
+  source   = "./modules/exercices"
+  exercice = "fin"
+}
+```
+
+### Étape 3 : Déploiement
+
+Déployez la nouvelle version du code :
+
+```bash
+terraform plan
+terraform apply
+```
+
+### Vérification des résultats
+
+#### Vérifier tous les conteneurs
+```bash
+docker ps
+```
+
+Vous devriez voir trois conteneurs en cours d'exécution :
+- `vault_container`
+- `mysql_container` 
+- `nginx_php`
+
+#### Consulter les logs Nginx/PHP
+```bash
+docker logs nginx_php
+```
+
+Recherchez des messages indiquant que Nginx et PHP-FPM sont démarrés correctement.
+
+#### Tester l'application web
+Accédez à l'application dans votre navigateur :
+**URL :** http://localhost:8080
+
+
+### Validation
+
+À la fin de cet exercice, vous devrez trouver un nouveau fichier Markdown (MD) pour passer à [l'exercice de fin](./fin.md) !
+
+### Félicitations ! 🎉
+
+Vous avez maintenant une infrastructure complète avec :
+- Gestion sécurisée des secrets (Vault)
+- Base de données (MySQL)  
+- Serveur web avec PHP (Nginx)
+
+Cette architecture représente les fondements d'une application web moderne !
