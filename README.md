@@ -90,4 +90,6 @@ Vous pouvez fournir cette variable de plusieurs façons :
 - Un fichier de bonjour créé localement
 - Un fichier Markdown (MD) généré pour l'exercice 2
 
+Notez que les liens Markdown (comme le suivant), n'est que fonctionnel en local (par votre éditeur de texte) !
+
 Une fois ces fichiers créés, vous pourrez passer à [l'exercice 2](./exercice2.md) !
